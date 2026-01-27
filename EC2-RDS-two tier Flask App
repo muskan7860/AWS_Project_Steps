@@ -1,0 +1,257 @@
+🪜 Task 3: Deploy a Scalable Web Application
+Build a two-tier Flask application with:
+
+A MySQL database managed by Amazon RDS.
+A Flask-based web app deployed on EC2 inside an Auto Scaling Group behind an Elastic Load Balancer.
+Use this repo to get started:
+👉 Two-Tier Flask App on AWS
+
+💡 This exercise demonstrates how real-world web apps scale seamlessly on AWS.🚀 Two-Tier Scalable Flask App on AWS (Ubuntu Version)
+
+This project demonstrates how to deploy a scalable Flask application on AWS using EC2 (Ubuntu), RDS (MySQL), ALB, and Auto Scaling.
+
+Users access the website → request goes to ALB → EC2 (Flask App) → RDS (MySQL).
+
+🎯 Final Architecture
+Browser → Application Load Balancer → EC2 (Flask App) → RDS MySQL
+
+
+Flask app handles business logic.
+
+RDS stores persistent data.
+
+ALB + ASG ensures scalability and high availability.
+
+🔵 PHASE 0: Prerequisites
+
+AWS Account
+
+Default VPC (or custom)
+
+Ubuntu EC2 instance
+
+Basic knowledge of SSH and Linux commands
+
+🔵 PHASE 1: Create Database (RDS)
+
+We create the database first because the Flask app needs the DB endpoint.
+
+Step 1: Create RDS MySQL Database
+
+Go to AWS Console → RDS → Create database
+
+Configuration:
+
+Engine: MySQL
+
+Template: Free tier
+
+DB Name: flaskdb
+
+Master Username: admin
+
+Password: your-password
+
+Connectivity:
+
+VPC: Default
+
+Public Access: No
+
+Security Group: Create new → Allow inbound MySQL 3306 from EC2 Security Group (attach later)
+
+Click Create Database
+
+Wait until status is Available
+
+Step 2: Note RDS Details
+
+Go to RDS → Databases → flaskdb → Connectivity & security and save:
+
+Endpoint
+
+Port: 3306
+
+DB name
+
+Username & Password
+
+⚠️ Required for Flask app configuration.
+
+🔵 PHASE 2: Launch Ubuntu EC2 Instance (Manual Test)
+Step 3: Launch EC2
+
+AMI: Ubuntu Server 22.04 LTS
+
+Instance type: t2.micro
+
+Security Group:
+
+SSH 22 → Your IP
+
+HTTP 80 → 0.0.0.0/0
+
+Launch instance
+
+Step 4: SSH into EC2
+ssh -i key.pem ubuntu@<EC2_PUBLIC_IP>
+
+🔵 PHASE 3: Clone Repo & Run Flask App
+Step 5: Install Required Software
+sudo apt update -y
+sudo apt install python3-pip python3-dev git mysql-client -y
+pip3 install flask pymysql
+
+Step 6: Clone GitHub Repo
+cd ~
+git clone <REPO-URL>
+cd two-tier-flask-app
+
+Step 7: Configure Flask App to Use RDS
+# app.py
+host = "RDS-ENDPOINT"
+user = "admin"
+password = "your-password"
+database = "flaskdb"
+
+Step 8: Create Table in RDS (First Time Only)
+mysql -h <RDS-ENDPOINT> -u admin -p
+
+CREATE DATABASE flaskdb;
+USE flaskdb;
+
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100)
+);
+
+Step 9: Run Flask App Manually
+python3 app.py
+
+
+Open browser → http://EC2_PUBLIC_IP:5000
+
+Verify Flask app works and connects to RDS.
+
+🔵 PHASE 4: Make It Scalable (Real AWS Automation)
+Step 10: Create AMI from Working EC2
+
+EC2 → Actions → Image → Create AMI
+
+Contains pre-installed Flask app + dependencies.
+
+Step 11: Create Launch Template
+
+Use the AMI created
+
+Instance type: t2.micro
+
+Security Group:
+
+HTTP 80 → ALB Security Group
+
+SSH 22 → Your IP
+
+Step 12: Create Application Load Balancer (ALB)
+
+Type: Application Load Balancer
+
+Scheme: Internet-facing
+
+Listener: HTTP 80
+
+Target Group:
+
+Port: 5000
+
+Health check: /
+
+ALB automatically distributes traffic among EC2 instances in the target group.
+
+Step 13: Create Auto Scaling Group (ASG)
+
+Launch Template: Use the one created above
+
+Attach to ALB Target Group
+
+Desired: 2
+
+Min: 1
+
+Max: 3
+
+AWS will automatically launch EC2 instances, register them with ALB, and maintain the desired count.
+
+🔵 PHASE 5: Final Test (Ubuntu-Friendly, Detailed)
+Step 1: Access Application via ALB
+
+Go to EC2 → Load Balancers → ALB → DNS Name
+
+Open the URL in a browser, e.g., http://<ALB-DNS-NAME>
+
+Step 2: Verify Flask App
+
+You should see the Flask app running.
+
+Enter a new user (if form exists) → verify it is inserted in RDS database.
+
+Step 3: Check Auto Scaling
+
+Go to EC2 → Auto Scaling Groups → Your ASG
+
+Click Instances → Verify multiple EC2 instances are running
+
+Each instance runs the same Flask app (from AMI)
+
+Refresh ALB DNS multiple times → traffic is automatically distributed
+
+Step 4: Test Health Check
+
+Stop one EC2 instance manually from EC2 console
+
+ALB health check detects unhealthy instance
+
+ASG launches a new instance automatically
+
+Refresh browser → Flask app remains accessible
+
+✅ Step 5: Optional Scaling Test
+
+Update Desired / Max instances in ASG → ALB automatically distributes traffic
+
+All instances use the same RDS backend
+
+🎉 Fully scalable two-tier Flask app running on Ubuntu EC2 instances.
+
+🔵 Key Skills Demonstrated
+
+Ubuntu EC2 setup + Flask deployment
+
+RDS MySQL configuration & connectivity
+
+AMI + Launch Template automation
+
+ALB configuration & health checks
+
+Auto Scaling Group setup & load distribution
+
+End-to-end two-tier AWS architecture
+
+🔗 Ubuntu Commands Summary
+# SSH into EC2
+ssh -i key.pem ubuntu@<EC2_PUBLIC_IP>
+
+# Install dependencies
+sudo apt update -y
+sudo apt install python3-pip python3-dev git mysql-client -y
+pip3 install flask pymysql
+
+# Clone repo
+git clone <REPO-URL>
+cd two-tier-flask-app
+
+# Run Flask app
+python3 app.py
+
+# Connect to RDS MySQL
+mysql -h <RDS-ENDPOINT> -u admin -p
