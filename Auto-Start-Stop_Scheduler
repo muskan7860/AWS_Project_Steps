@@ -1,0 +1,273 @@
+# EC2 Auto Start/Stop Using AWS Lambda & EventBridge
+
+> **Author:** Muskan Patel
+> **Role Perspective:** Experienced DevOps / Cloud Engineer
+> **Use Case:** AWS Cost Optimization (Real-world production pattern)
+
+---
+
+## 📌 Problem Statement
+
+In many projects, EC2 instances are required **only during business hours**.
+Running them 24/7 leads to **unnecessary AWS costs**.
+
+### 🎯 Objective
+
+Automatically:
+
+* ▶️ **Start EC2 instances during business hours**
+* ⏹ **Stop EC2 instances during non-business hours**
+
+Using:
+
+* **AWS Lambda (Python / Boto3)**
+* **Amazon EventBridge (Scheduled rules)**
+* **EC2 Tags (scalable & safe control)**
+
+---
+
+## 🏗 Architecture
+
+```
+Amazon EventBridge (Cron Schedule)
+              │
+              ▼
+        AWS Lambda
+              │
+              ▼
+        Amazon EC2
+```
+
+### Design Highlights
+
+* Fully serverless
+* No credentials stored in code
+* Tag-based control (safe for large environments)
+* Pay only when Lambda runs
+
+---
+
+## 🏷 EC2 Tagging Strategy
+
+Only instances with the below tag are managed:
+
+```
+Key: AutoStartStop
+Value: true
+```
+
+### Why Tags?
+
+* No hardcoded instance IDs
+* Easy to scale
+* Production-safe approach
+
+---
+
+## 🔐 IAM Configuration (Lambda Execution Role)
+
+Lambda uses an **IAM role** to interact with EC2.
+
+### Policies attached (Demo setup)
+
+```text
+AWSLambdaBasicExecutionRole
+AmazonEC2FullAccess
+```
+
+> ⚠️ **Production Recommendation:**
+> Replace `AmazonEC2FullAccess` with a least-privilege policy.
+
+### Least-Privilege IAM Policy (Recommended)
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeInstances",
+        "ec2:StartInstances",
+        "ec2:StopInstances"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+---
+
+## 🧠 Lambda Function (Python)
+
+```python
+import boto3
+
+ec2 = boto3.client('ec2')
+
+def lambda_handler(event, context):
+    action = event.get('action')  # start or stop
+
+    if action not in ['start', 'stop']:
+        return {"error": "Invalid action"}
+
+    # Fetch instances with AutoStartStop=true
+    response = ec2.describe_instances(
+        Filters=[
+            {
+                'Name': 'tag:AutoStartStop',
+                'Values': ['true']
+            },
+            {
+                'Name': 'instance-state-name',
+                'Values': ['running', 'stopped']
+            }
+        ]
+    )
+
+    instance_ids = []
+    for reservation in response['Reservations']:
+        for instance in reservation['Instances']:
+            instance_ids.append(instance['InstanceId'])
+
+    if not instance_ids:
+        return {"message": "No matching EC2 instances found"}
+
+    if action == 'start':
+        ec2.start_instances(InstanceIds=instance_ids)
+        return {"message": f"Started instances: {instance_ids}"}
+
+    if action == 'stop':
+        ec2.stop_instances(InstanceIds=instance_ids)
+        return {"message": f"Stopped instances: {instance_ids}"}
+```
+
+---
+
+## 🧪 Lambda Testing
+
+### Test Event – STOP
+
+```json
+{
+  "action": "stop"
+}
+```
+
+### Test Event – START
+
+```json
+{
+  "action": "start"
+}
+```
+
+### Expected Output
+
+```json
+{
+  "message": "Stopped instances: [\"i-xxxxxxxxxxxx\"]"
+}
+```
+
+---
+
+## ⏰ EventBridge Scheduling
+
+EventBridge is used to trigger Lambda automatically based on time.
+
+> ⚠️ EventBridge schedules use **UTC timezone**
+
+---
+
+### 🌙 Stop EC2 at Night (8:00 PM IST)
+
+```
+cron(0 14 ? * MON-FRI *)
+```
+
+**Target Input:**
+
+```json
+{
+  "action": "stop"
+}
+```
+
+Rule Name:
+
+```
+ec2-stop-night
+```
+
+---
+
+### ☀️ Start EC2 in Morning (9:00 AM IST)
+
+```
+cron(30 3 ? * MON-FRI *)
+```
+
+**Target Input:**
+
+```json
+{
+  "action": "start"
+}
+```
+
+Rule Name:
+
+```
+ec2-start-morning
+```
+
+---
+
+## 💸 Cost Optimization Impact
+
+| Instance Type | Daily Runtime Reduced | Monthly Savings |
+| ------------- | --------------------- | --------------- |
+| t3.micro      | ~12 hrs               | ~40–50%         |
+| Multiple EC2s | More                  | Significant     |
+
+---
+
+## ❌ Common Issues & Fixes
+
+| Issue              | Root Cause    | Fix                      |
+| ------------------ | ------------- | ------------------------ |
+| Invalid action     | Missing input | Provide `action` JSON    |
+| No instances found | Missing tag   | Add `AutoStartStop=true` |
+| AccessDenied       | IAM missing   | Attach EC2 permissions   |
+
+---
+
+## 🚀 Enhancements (Next Level)
+
+* Skip production instances using tags
+* Add SNS / Email notifications
+* Multi-region support
+* Terraform automation
+* CloudWatch alarms
+
+---
+
+## 🧩 Skills Demonstrated
+
+* AWS cost optimization
+* Serverless automation
+* Event-driven architecture
+* IAM security best practices
+* EC2 lifecycle management
+
+---
+
+## 📄 License
+
+MIT License
+
+---
+
+### ⭐ This pattern is widely used in real-world DevOps teams to control cloud costs efficiently.
