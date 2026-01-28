@@ -1,0 +1,209 @@
+# AWS Lambda + DynamoDB Integration (Serverless Demo)
+
+> **Author:** Muskan Patel
+> **Role Perspective:** Experienced DevOps / Cloud Engineer
+> **Level:** Beginner → Production‑ready fundamentals
+
+---
+
+## 📌 Overview
+
+This repository demonstrates a **clean, real‑world integration between AWS Lambda and Amazon DynamoDB** using Python.
+It focuses on **correct IAM usage, DynamoDB schema rules, and serverless best practices**.
+
+This is **not a toy example** — it reflects how Lambda functions securely access AWS services in production.
+
+---
+
+## 🏗 Architecture
+
+```
+Client / Test Event
+        │
+        ▼
+ AWS Lambda (Python)
+        │  (IAM Role)
+        ▼
+ Amazon DynamoDB
+```
+
+### Key Principles
+
+* No hardcoded credentials
+* IAM role–based access
+* Fully serverless
+* Pay‑per‑use
+
+---
+
+## 🔐 IAM Configuration
+
+Lambda accesses DynamoDB using an **Execution Role**, not usernames or access keys.
+
+### Required Policies (Demo Purpose)
+
+```text
+AWSLambdaBasicExecutionRole
+AmazonDynamoDBFullAccess
+```
+
+> ⚠️ **Production Note:**
+> Replace `AmazonDynamoDBFullAccess` with a **least‑privilege policy**.
+
+---
+
+## 🗄 DynamoDB Table Configuration
+
+| Property      | Value                        |
+| ------------- | ---------------------------- |
+| Table Name    | `lambda-dynamodb-connection` |
+| Partition Key | `server_id` (String)         |
+| Sort Key      | None                         |
+
+### Important DynamoDB Rules
+
+* Primary key names are **case‑sensitive**
+* `GetItem` **requires the full primary key**
+* Attribute schema is flexible (schema‑less)
+
+---
+
+## 🧠 Lambda Function Code
+
+```python
+import boto3
+
+# Create DynamoDB service resource using IAM role
+dynamodb = boto3.resource('dynamodb')
+
+# Connect to DynamoDB table
+table = dynamodb.Table('lambda-dynamodb-connection')
+
+
+def lambda_handler(event, context):
+    """
+    Inserts and retrieves a record from DynamoDB.
+    Demonstrates secure Lambda ↔ DynamoDB integration.
+    """
+
+    # Write item to DynamoDB
+    table.put_item(
+        Item={
+            'server_id': 'u123',
+            'name': 'Muskan',
+            'role': 'Cloud Engineer'
+        }
+    )
+
+    # Read item back using primary key
+    response = table.get_item(
+        Key={'server_id': 'u123'}
+    )
+
+    return {
+        "message": "DynamoDB connected successfully",
+        "item": response.get('Item')
+    }
+```
+
+---
+
+## 🔍 Code Walkthrough (DevOps Perspective)
+
+### `boto3.resource('dynamodb')`
+
+* Uses AWS SDK for Python
+* Automatically assumes Lambda’s IAM role
+* No credential management required
+
+---
+
+### `table.put_item()`
+
+* Writes data to DynamoDB
+* Primary key (`server_id`) is mandatory
+* Remaining attributes are flexible
+
+---
+
+### `table.get_item()`
+
+* Retrieves **exactly one item**
+* Fails if key name or type does not match schema
+
+---
+
+## 🧪 Testing
+
+### Test Event
+
+```json
+{
+  "action": "test"
+}
+```
+
+### Expected Output
+
+```json
+{
+  "message": "DynamoDB connected successfully",
+  "item": {
+    "server_id": "u123",
+    "name": "Muskan",
+    "role": "Cloud Engineer"
+  }
+}
+```
+
+---
+
+## ❌ Common Errors & Root Causes
+
+| Error               | Cause              |
+| ------------------- | ------------------ |
+| ValidationException | Key mismatch       |
+| Item not returned   | Wrong key name     |
+| AccessDenied        | IAM policy missing |
+
+> If DynamoDB throws an error, the **connection is working** — the schema is wrong.
+
+---
+
+## 🚀 Best Practices (Production‑Ready)
+
+* Use environment variables for table name
+* Implement structured logging
+* Add exception handling
+* Apply least‑privilege IAM policies
+* Validate input from events
+
+---
+
+## 📈 Next Enhancements
+
+* API Gateway → Lambda → DynamoDB
+* Full CRUD operations
+* Conditional writes
+* Pagination
+* CI/CD using GitHub Actions
+
+---
+
+## 🧩 Skills Demonstrated
+
+* Serverless architecture
+* IAM security model
+* DynamoDB data modeling
+* AWS SDK (boto3)
+* Cloud‑native design principles
+
+---
+
+## 📄 License
+
+MIT License
+
+---
+
+### ⭐ If you’re learning AWS seriously, this pattern is **mandatory knowledge** for real‑world DevOps and Cloud roles.
