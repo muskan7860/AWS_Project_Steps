@@ -1,0 +1,210 @@
+CI-Style Node.js Deployment on AWS ECS
+
+This project demonstrates an end-to-end CI-style deployment of a Node.js application on AWS using EC2, Docker, ECR, ECS, and IAM.
+
+The workflow follows a real-world container deployment approach:
+
+GitHub → EC2 → Docker → ECR → ECS
+
+🧱 Architecture Overview
+
+GitHub – Source code repository
+
+EC2 – Build server to clone code and build Docker image
+
+Docker – Containerization of Node.js app
+
+Amazon ECR – Container image registry
+
+Amazon ECS – Container orchestration and application runtime
+
+IAM – Secure access between AWS services
+
+📌 Prerequisites
+
+Before starting, ensure you have:
+
+AWS account
+
+Basic knowledge of Linux & Docker
+
+Node.js application with a Dockerfile
+
+IAM user with programmatic access
+
+🛠️ Task 1: Deploy Node.js Application to ECS (Initial Setup)
+Step 1: Launch EC2 Instance
+
+Create an EC2 instance (Amazon Linux / Ubuntu)
+
+Allow inbound access for:
+
+SSH (22)
+
+Application port (e.g., 3000 or 8000)
+
+Connect to EC2:
+
+ssh -i key.pem ubuntu@<EC2_PUBLIC_IP>
+
+Step 2: Clone Application Code from GitHub
+git clone https://github.com/<your-username>/<repo-name>.git
+cd <repo-name>
+
+Step 3: Create ECR Repository
+
+Go to Amazon ECR → Create repository
+
+Copy the repository URI (you’ll need it later)
+
+Step 4: Install Docker & AWS CLI on EC2
+sudo apt update
+sudo apt install docker.io -y
+sudo usermod -aG docker $USER
+sudo reboot
+
+
+After reboot:
+
+docker --version
+
+
+Install AWS CLI:
+
+sudo apt install awscli -y
+
+Step 5: Create IAM User & Configure AWS CLI
+
+Create an IAM user with programmatic access
+
+Attach permissions:
+
+AmazonEC2ContainerRegistryPublicFullAccess
+
+AmazonEC2ContainerRegistryPublicReadOnly
+
+AmazonEC2ContainerRegistryPublicPowerUser
+
+Configure AWS CLI:
+
+aws configure
+
+
+Enter:
+
+Access Key
+
+Secret Key
+
+Region
+
+Output format (json)
+
+Step 6: Authenticate Docker with ECR
+
+Run the login command copied from ECR console:
+
+aws ecr get-login-password --region <region> \
+| docker login --username AWS --password-stdin <account-id>.dkr.ecr.<region>.amazonaws.com
+
+Step 7: Build Docker Image
+docker build -t node-app:v1 .
+
+Step 8: Tag & Push Image to ECR
+docker tag node-app:v1 <account-id>.dkr.ecr.<region>.amazonaws.com/node-app:v1
+docker push <account-id>.dkr.ecr.<region>.amazonaws.com/node-app:v1
+
+Step 9: Create ECS Cluster
+
+Go to ECS → Clusters → Create Cluster
+
+Choose:
+
+Networking only (Fargate) or EC2 (as per use case)
+
+Step 10: Create Task Definition
+
+Launch type: Fargate or EC2
+
+Task execution role: Create default role
+
+Container image: ECR image URI
+
+Container port: 3000 or 8000
+
+Step 11: Create ECS Service
+
+Select cluster & task definition
+
+Desired tasks: 1
+
+Launch service
+
+Step 12: Fix Port Not Reachable Issue (If Needed)
+
+If app is not accessible:
+
+Go to EC2 → Network Interface (ENI)
+
+Open attached Security Group
+
+Add inbound rule:
+
+Port: 8000 (or app port)
+
+Source: 0.0.0.0/0
+
+Now open:
+
+http://<EC2_PUBLIC_IP>:8000
+
+
+✅ Application should be live.
+
+🔁 Task 2: Redeploy Application After Code Changes
+
+When you modify code (e.g., update todo file), you do NOT recreate everything.
+
+❌ Do NOT recreate:
+
+ECS Cluster
+
+ECS Service
+
+ECR Repository
+
+IAM Roles
+
+✅ Correct Redeployment Steps
+Step 1: Update Code
+
+Make changes in your Node.js application.
+
+Step 2: Build New Docker Image
+docker build -t node-app:v2 .
+
+Step 3: Tag & Push New Image
+docker tag node-app:v2 <account-id>.dkr.ecr.<region>.amazonaws.com/node-app:v2
+docker push <account-id>.dkr.ecr.<region>.amazonaws.com/node-app:v2
+
+Step 4: Create New Task Definition Revision
+
+ECS → Task Definitions
+
+Select existing task definition
+
+Click Create new revision
+
+Update image tag to v2
+
+Save
+
+Step 5: Update ECS Service
+
+ECS → Cluster → Service → Update
+
+Select latest task definition revision
+
+Deploy
+
+ECS will stop old containers and start new ones automatically.
