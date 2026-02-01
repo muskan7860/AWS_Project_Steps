@@ -1,0 +1,200 @@
+
+
+This project demonstrates end-to-end deployment of a Netflix-style frontend application on Amazon EKS using eksctl, Docker, and Kubernetes.
+
+The goal of this project is to show real-world DevOps execution — from infrastructure provisioning to exposing a containerized application publicly using AWS LoadBalancer.
+
+🧱 Architecture Overview
+Local / EC2
+   |
+   |-- AWS CLI, eksctl, kubectl
+   |
+Amazon EKS (Managed Control Plane)
+   |
+   |-- Managed Node Group (EC2 worker nodes)
+   |
+Kubernetes Deployment
+   |
+Kubernetes Service (LoadBalancer)
+   |
+Public AWS ELB DNS → Netflix-style UI
+
+📌 Prerequisites
+
+Before starting, make sure you have:
+
+AWS Account with sufficient permissions
+
+An EC2 instance (Amazon Linux / Ubuntu recommended)
+
+IAM role attached to EC2 with:
+
+EKS
+
+EC2
+
+IAM
+
+VPC
+
+ELB permissions
+
+🔧 Step 1: Install Required Tools on EC2
+1️⃣ Install AWS CLI
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o awscliv2.zip
+unzip awscliv2.zip
+sudo ./aws/install
+aws --version
+
+2️⃣ Install kubectl
+curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.29.0/2024-01-04/bin/linux/amd64/kubectl
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+kubectl version --client
+
+3️⃣ Install eksctl
+curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_Linux_amd64.tar.gz" | tar xz
+sudo mv eksctl /usr/local/bin
+eksctl version
+
+☸️ Step 2: Create EKS Cluster Using eksctl
+eksctl create cluster \
+  --name netflix-cluster \
+  --region ap-south-1 \
+  --nodegroup-name netflix-nodes \
+  --node-type t3.medium \
+  --nodes 2 \
+  --nodes-min 1 \
+  --nodes-max 3 \
+  --managed
+
+
+⏳ This takes 10–15 minutes.
+
+Verify cluster:
+
+kubectl get nodes
+
+🔐 Step 3: Associate IAM OIDC Provider (Security Best Practice)
+eksctl utils associate-iam-oidc-provider \
+  --region ap-south-1 \
+  --cluster netflix-cluster \
+  --approve
+
+🐳 Step 4: Build Netflix-Style Docker Image
+Sample Dockerfile (Production-ready)
+FROM node:16-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=build /app/build /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+
+
+Build image:
+
+docker build -t netflix-app .
+
+
+Tag & push to Docker Hub (or ECR):
+
+docker tag netflix-app <your-dockerhub-username>/netflix:latest
+docker push <your-dockerhub-username>/netflix:latest
+
+📦 Step 5: Create Kubernetes Deployment
+
+netflix-deployment.yml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: netflix-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: netflix
+  template:
+    metadata:
+      labels:
+        app: netflix
+    spec:
+      containers:
+      - name: netflix
+        image: <your-dockerhub-username>/netflix:latest
+        ports:
+        - containerPort: 80
+
+
+Apply:
+
+kubectl apply -f netflix-deployment.yml
+kubectl get pods
+
+🌐 Step 6: Expose Application Using LoadBalancer
+
+netflix-service.yml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: netflix-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: netflix
+  ports:
+    - port: 80
+      targetPort: 80
+
+
+Apply:
+
+kubectl apply -f netflix-service.yml
+kubectl get svc
+
+🚀 Step 7: Access Netflix-Style UI
+
+Get external URL:
+
+kubectl get svc netflix-service
+
+
+Open in browser:
+
+http://<EXTERNAL-IP>
+
+
+🎉 Netflix-style frontend is now live on AWS EKS.
+
+🛡️ Key DevOps Concepts Demonstrated
+
+Managed Kubernetes using Amazon EKS
+
+Infrastructure provisioning via eksctl
+
+Dockerized frontend workloads
+
+Kubernetes Deployments & Services
+
+AWS LoadBalancer integration
+
+IAM OIDC security best practices
+
+📸 Recommended Screenshots for LinkedIn / Portfolio
+
+kubectl get nodes
+
+kubectl get pods
+
+kubectl get svc
+
+Netflix-style UI in browser
+
+🧹 Cleanup (Avoid AWS Charges)
+eksctl delete cluster --name netflix-cluster --region ap-south-1
