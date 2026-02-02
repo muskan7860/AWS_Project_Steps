@@ -1,0 +1,154 @@
+📄 README.md
+# AWS Lambda Deployment Using Serverless Framework (Node.js)
+
+This project demonstrates how to deploy a simple AWS Lambda function using the **Serverless Framework**.
+It is designed for **beginners and freshers** to understand real-world DevOps deployment flow.
+
+---
+
+## 🧠 What You Will Learn
+
+- What is AWS Lambda
+- What is Serverless Framework
+- How to deploy Lambda using CLI
+- Infrastructure as Code (IaC) basics
+- How AWS IAM & CloudFormation work together
+
+---
+
+## 🛠 Prerequisites
+
+- AWS Account
+- IAM User with AdministratorAccess
+- Node.js installed
+- Serverless Framework installed
+
+---
+
+## 🔧 Install Serverless Framework
+
+```bash
+npm install -g serverless
+
+
+Verify:
+
+serverless -v
+
+🔐 Configure AWS Credentials (One-Time)
+serverless config credentials \
+  --provider aws \
+  --key YOUR_ACCESS_KEY \
+  --secret YOUR_SECRET_KEY
+
+📁 Project Structure
+AWS-Nodejs-app/
+ ├── handler.js        # Lambda function code
+ ├── serverless.yml    # Infrastructure definition
+ └── README.md
+
+🧾 handler.js (Lambda Code)
+module.exports.hello = async (event) => {
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      message: "Hello from AWS Lambda 🚀"
+    })
+  };
+};
+
+🏗 serverless.yml (Infrastructure as Code)
+service: AWS-Nodejs-app
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+
+functions:
+  hello:
+    handler: handler.hello
+
+🚀 Deploy to AWS
+serverless deploy
+
+
+Expected output:
+
+Service deployed to stack AWS-Nodejs-app-dev
+functions:
+  hello: AWS-Nodejs-app-dev-hello
+
+▶️ Invoke Lambda Function
+serverless invoke -f hello
+
+
+Output:
+
+{
+  "statusCode": 200,
+  "body": "Hello from AWS Lambda 🚀"
+}
+
+🧹 Cleanup Resources (Important)
+serverless remove
+
+
+This deletes:
+
+Lambda function
+
+CloudFormation stack
+
+Related IAM resources
+
+👨‍💻 DevOps Best Practices Followed
+
+No hardcoded credentials
+
+IAM Role-based access
+
+Infrastructure as Code
+
+CLI-based automation
+
+Zero manual AWS Console dependency
+
+📌 Next Enhancements
+
+Add API Gateway
+
+Deploy in Mumbai region
+
+Convert to Python
+
+Add CI/CD using GitHub Actions
+
+📢 Author
+
+Muskan Patel
+DevOps Engineer | AWS | Serverless
+
+
+---
+
+
+
+✔ Knows Serverless  
+✔ Understands IaC  
+✔ Uses AWS correctly  
+✔ CLI-first mindset  
+✔ Clean documentation  
+
+---
+
+## 🔜 Want Next Step?
+
+Say **one word**:
+- `API`
+- `Mumbai`
+- `Python`
+- `CI/CD`
+- `LinkedIn`
+
+I’ll guide you like a **senior DevOps mentor** 🚀
