@@ -152,3 +152,48 @@ Say **one word**:
 - `LinkedIn`
 
 I’ll guide you like a **senior DevOps mentor** 🚀
+================================================================================================
+ubuntu@ip-172-31-30-184:~/AWS-Nodejs-app$ serverless info
+
+⠋ Checking AWS credentials(node:9331) Warning: NodeDeprecationWarning: The AWS SDK for JavaScript (v3) will
+no longer support Node.js v18.19.1 in January 2026.
+
+To continue receiving updates to AWS services, bug fixes, and security
+updates please upgrade to a supported Node.js LTS version.
+
+More information can be found at: https://a.co/c895JFp
+(Use `node --trace-warnings ...` to show where the warning was created)
+service: AWS-Nodejs-app
+stage: dev
+region: us-east-1
+stack: AWS-Nodejs-app-dev
+endpoint: GET - https://ncklr9ip0i.execute-api.us-east-1.amazonaws.com/hello
+functions:
+  hello: AWS-Nodejs-app-dev-hello
+
+ubuntu@ip-172-31-30-184:~/AWS-Nodejs-app$ cat handler.js
+module.exports.hello = async (event) => {
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      message: "Hello from AWS Lambda 🚀"
+    })
+  };
+};
+
+ubuntu@ip-172-31-30-184:~/AWS-Nodejs-app$ cat serverless.yml
+service: AWS-Nodejs-app
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+
+functions:
+  hello:
+    handler: handler.hello
+    events:
+      - httpApi:
+          path: /hello
+          method: get
+
