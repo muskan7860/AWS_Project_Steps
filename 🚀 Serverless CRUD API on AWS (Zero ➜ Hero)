@@ -1,0 +1,275 @@
+🚀 Serverless CRUD API on AWS (Zero ➜ Hero)
+
+A complete Serverless Backend Project using AWS Lambda, API Gateway (HTTP API), DynamoDB, and Serverless Framework — built, debugged, and deployed from scratch.
+
+📌 Author
+
+Muskan Patel
+DevOps Engineer | AWS | Serverless | CI/CD
+
+📖 Project Overview
+
+This project implements a serverless CRUD backend (Task / Kaam Manager) using:
+
+AWS Lambda (compute)
+
+API Gateway HTTP API (routing)
+
+DynamoDB (NoSQL database)
+
+Serverless Framework (Infrastructure as Code)
+
+✨ What this project demonstrates
+
+✅ Real AWS deployment (not local mock)
+✅ Infrastructure as Code (IaC)
+✅ Debugging real production errors
+✅ IAM, logs, runtime issues
+✅ CLI-first DevOps mindset
+
+🏗 Architecture (High Level)
+Client (curl / Postman)
+        |
+        v
+API Gateway (HTTP API)
+        |
+        v
+AWS Lambda (Node.js 18)
+        |
+        v
+DynamoDB (KaamKaro table)
+
+🧩 Features (API Endpoints)
+Method	Path	Description
+GET	/	Health check
+POST	/kaam	Create a task
+GET	/kaam	Fetch all tasks
+PUT	/kaam/{id}	Mark task as completed
+🛠 Prerequisites (VERY IMPORTANT)
+
+Make sure you have:
+
+AWS Account
+
+IAM User with programmatic access
+
+Node.js 18.x
+
+npm
+
+AWS CLI
+
+Serverless Framework v3/v4
+
+Install Serverless Framework
+npm install -g serverless
+
+Verify versions
+node -v
+serverless -v
+aws --version
+
+🔐 AWS Credentials Setup
+
+Configure AWS credentials on your machine:
+
+aws configure
+
+
+Enter:
+
+AWS Access Key
+
+AWS Secret Key
+
+Region: us-east-1
+
+Output: json
+
+Verify:
+
+aws sts get-caller-identity
+
+
+✅ If this works, AWS is configured correctly.
+
+📁 Project Structure
+aws-node-http-api-project/
+│
+├── serverless.yml
+├── package.json
+├── package-lock.json
+├── README.md
+└── src/
+    ├── hello.js
+    ├── kaamBharo.js
+    ├── kaamDikhao.js
+    └── kaamKhatamKaro.js
+
+🧠 Understanding the Lambda Functions
+1️⃣ hello.js — Health Check
+GET /
+
+
+Purpose:
+
+Confirms API & Lambda are alive
+
+Used for quick sanity testing
+
+2️⃣ kaamBharo.js — Create Task
+POST /kaam
+
+
+What it does:
+
+Reads JSON body
+
+Generates UUID
+
+Stores item in DynamoDB
+
+const { v4: uuidv4 } = require("uuid");
+
+3️⃣ kaamDikhao.js — Fetch Tasks
+GET /kaam
+
+
+What it does:
+
+Scans DynamoDB table
+
+Returns all tasks
+
+4️⃣ kaamKhatamKaro.js — Update Task
+PUT /kaam/{id}
+
+
+What it does:
+
+Reads id from URL
+
+Updates completed field
+
+📦 Installing Dependencies (CRITICAL STEP)
+
+This project uses the uuid package.
+
+❌ Common mistake
+
+Deploying without installing dependencies → Lambda crash.
+
+✅ Correct way
+npm install uuid
+
+
+This creates:
+
+node_modules/
+
+Updates package.json
+
+🚀 Deployment (Serverless Framework)
+
+Deploy everything (Lambda + API Gateway + DynamoDB):
+
+serverless deploy
+
+
+After success, you’ll see output like:
+
+endpoints:
+  GET  - https://xxxx.execute-api.us-east-1.amazonaws.com/
+  POST - https://xxxx.execute-api.us-east-1.amazonaws.com/kaam
+
+🧪 Testing the API (IMPORTANT)
+🔹 1. Health Check
+curl https://xxxx.execute-api.us-east-1.amazonaws.com/
+
+🔹 2. Create Task
+curl -X POST https://xxxx.execute-api.us-east-1.amazonaws.com/kaam \
+  -H "Content-Type: application/json" \
+  -d '{"kaam":"Learn Serverless","owner":"Muskan"}'
+
+🔹 3. Fetch Tasks
+curl https://xxxx.execute-api.us-east-1.amazonaws.com/kaam
+
+🔹 4. Update Task
+curl -X PUT https://xxxx.execute-api.us-east-1.amazonaws.com/kaam/{id} \
+  -H "Content-Type: application/json" \
+  -d '{"completed":true}'
+
+📊 Checking Logs (VERY IMPORTANT)
+View Lambda logs
+serverless logs -f kaamBharo
+
+
+This reads CloudWatch Logs directly.
+
+❌ Errors Faced & How We Fixed Them (INTERVIEW GOLD)
+❌ Error 1: AWS credentials missing
+
+Cause: AWS CLI not configured
+✅ Fix:
+
+aws configure
+
+❌ Error 2: nodejs14.x is no longer supported
+
+Cause: Old Lambda runtime
+✅ Fix:
+
+runtime: nodejs18.x
+
+❌ Error 3: Cannot find module 'uuid'
+
+Cause: Dependency not packaged
+✅ Fix:
+
+npm install uuid
+serverless deploy
+
+❌ Error 4: Internal Server Error
+
+Cause: Lambda crash (check logs)
+✅ Fix:
+
+serverless logs -f kaamBharo
+
+🧠 Key Learnings
+
+✔ How Serverless Framework packages code
+✔ How API Gateway routing works
+✔ How to debug Lambda via logs
+✔ How IAM & DynamoDB permissions matter
+✔ How production errors look & feel
+
+🎯 How to Explain This in an Interview
+
+“I built a fully serverless CRUD API using AWS Lambda, API Gateway HTTP APIs, and DynamoDB. I deployed it using Serverless Framework, debugged runtime and dependency issues using CloudWatch logs, and ensured infrastructure was managed via IaC.”
+
+🔥 This answer shows real experience, not tutorial knowledge.
+
+🔜 Future Enhancements
+
+Deploy to Mumbai (ap-south-1)
+
+Convert backend to Python
+
+Add CI/CD with GitHub Actions
+
+Add Auth (Cognito)
+
+Replace Scan with Query (prod-ready)
+
+⭐ Final Note
+
+This project is:
+
+Interview ready
+
+Resume worthy
+
+Real AWS experience
+
+If someone follows this README, they will succeed without asking questions.
